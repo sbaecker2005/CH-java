@@ -3,35 +3,145 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Painel Analítico — CRM Hospital São Rafael</title>
+<title>HealthFlow CRM — Painel Analítico com IA</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"/>
 <style>
-  body { background:#f1f5f9; font-family:'Segoe UI',system-ui,sans-serif; }
-  .topbar { background:#0f172a; color:#fff; padding:1rem 2rem; box-shadow:0 2px 6px rgba(0,0,0,.15); }
-  .topbar h4 { margin:0; font-weight:700; }
-  .topbar small { color:#94a3b8; }
-  .accent { height:4px; background:linear-gradient(90deg,#3b82f6,#10b981,#f59e0b,#ef4444); }
-  .container-fluid { padding:1.5rem 2rem; max-width:1600px; }
-  .card { border:none; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:12px; }
-  .card-header { background:transparent; border-bottom:1px solid #f1f5f9; font-weight:600; }
-  .stat-card { border-radius:12px; padding:1.4rem; color:#fff; }
+  * { box-sizing:border-box; }
+  body { background:#0a0e1a; color:#e2e8f0; font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; }
+
+  /* ─── HERO ─────────────────────────────────────────── */
+  .hero {
+    background: radial-gradient(ellipse at top left,#1e3a8a 0%,#0a0e1a 60%),
+                radial-gradient(ellipse at bottom right,#7c3aed 0%,#0a0e1a 60%);
+    padding: 2.5rem 2rem 3rem;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(59,130,246,.3);
+  }
+  .hero::before {
+    content:''; position:absolute; inset:0;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(59,130,246,.15) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(16,185,129,.12) 0%, transparent 40%);
+    animation: pulse 6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+  .hero-content { position:relative; max-width:1600px; margin:0 auto; }
+  .brand-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem; }
+  .brand { display:flex; align-items:center; gap:.8rem; }
+  .brand-logo {
+    width:48px; height:48px; border-radius:12px;
+    background:linear-gradient(135deg,#3b82f6,#10b981);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 20px rgba(59,130,246,.4);
+  }
+  .brand h1 { font-size:1.4rem; margin:0; font-weight:700; color:#fff; letter-spacing:-.02em; }
+  .brand small { color:#94a3b8; }
+  .live-pill { display:inline-flex; align-items:center; gap:.5rem; padding:.4rem .9rem; background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.4); border-radius:999px; font-size:.78rem; color:#86efac; font-weight:600; }
+  .live-pill .dot { width:8px; height:8px; border-radius:50%; background:#10b981; animation:blink 1.2s infinite; box-shadow:0 0 12px #10b981; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .ai-badge {
+    display:inline-flex; align-items:center; gap:.5rem; padding:.45rem 1rem;
+    background:linear-gradient(90deg,rgba(124,58,237,.2),rgba(59,130,246,.2));
+    border:1px solid rgba(124,58,237,.5); border-radius:999px;
+    font-size:.75rem; color:#c4b5fd; font-weight:700; letter-spacing:.05em;
+    margin-bottom:1rem;
+  }
+  .hero h2 { font-size:2.4rem; font-weight:800; color:#fff; line-height:1.1; margin:0 0 .8rem; letter-spacing:-.02em; }
+  .hero h2 .grad { background:linear-gradient(90deg,#3b82f6,#10b981,#f59e0b); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .hero p.lead { font-size:1.05rem; color:#cbd5e1; max-width:760px; margin:0 0 1.6rem; }
+  .ml-stats { display:flex; gap:2.5rem; flex-wrap:wrap; }
+  .ml-stat { display:flex; flex-direction:column; }
+  .ml-stat .num { font-size:2rem; font-weight:800; color:#fff; line-height:1; }
+  .ml-stat .num .pct { font-size:1.1rem; color:#94a3b8; }
+  .ml-stat .lbl { font-size:.7rem; color:#94a3b8; text-transform:uppercase; letter-spacing:.08em; margin-top:.3rem; font-weight:700; }
+  .ml-stat .grad { background:linear-gradient(90deg,#3b82f6,#10b981); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+  /* ─── INSIGHT CARDS (BOOM!) ──────────────────────────── */
+  .insights-section { padding:2.5rem 2rem; max-width:1600px; margin:0 auto; }
+  .section-title { display:flex; align-items:center; gap:.6rem; margin-bottom:1.5rem; color:#fff; font-weight:700; }
+  .section-title i { color:#7c3aed; }
+  .section-title small { color:#94a3b8; font-weight:400; margin-left:auto; font-size:.85rem; }
+
+  .insight-card {
+    background:linear-gradient(145deg,#1e293b,#0f172a);
+    border:1px solid rgba(59,130,246,.2);
+    border-radius:16px; padding:1.5rem; height:100%;
+    position:relative; overflow:hidden;
+    transition:transform .25s, border-color .25s, box-shadow .25s;
+  }
+  .insight-card:hover { transform:translateY(-4px); border-color:rgba(59,130,246,.5); box-shadow:0 12px 30px rgba(59,130,246,.15); }
+  .insight-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,var(--c1,#3b82f6),var(--c2,#10b981));
+  }
+  .insight-card .ic-num {
+    position:absolute; top:1rem; right:1.2rem;
+    font-size:3.5rem; font-weight:900; color:rgba(255,255,255,.06); line-height:1;
+  }
+  .insight-card .ic-icon {
+    width:48px; height:48px; border-radius:12px;
+    background:linear-gradient(135deg,var(--c1,#3b82f6),var(--c2,#10b981));
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:1.4rem; margin-bottom:1rem;
+    box-shadow:0 6px 16px rgba(0,0,0,.3);
+  }
+  .insight-card h5 { color:#fff; font-weight:700; font-size:.95rem; margin-bottom:.6rem; letter-spacing:.05em; text-transform:uppercase; }
+  .insight-card .ic-finding { color:#e2e8f0; font-size:.95rem; margin-bottom:.8rem; line-height:1.4; }
+  .insight-card .ic-action {
+    display:flex; gap:.5rem; align-items:flex-start;
+    background:rgba(16,185,129,.1); border-left:3px solid #10b981;
+    padding:.7rem .9rem; border-radius:6px;
+    font-size:.83rem; color:#86efac;
+  }
+  .insight-card .ic-action i { color:#10b981; flex-shrink:0; margin-top:2px; }
+
+  /* ─── DASHBOARD CARDS ───────────────────────────────── */
+  .container-fluid { padding:0 2rem 2rem; max-width:1600px; }
+  .card { background:#1e293b; border:1px solid #334155; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,.2); color:#e2e8f0; }
+  .card-header { background:transparent; border-bottom:1px solid #334155; font-weight:600; color:#e2e8f0; }
+  .card-body { color:#e2e8f0; }
+  table { color:#e2e8f0 !important; }
+  table thead th { background:#0f172a !important; color:#94a3b8 !important; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; border-bottom:1px solid #334155; }
+  table tbody tr { border-color:#334155; }
+  table.table-hover tbody tr:hover { background:rgba(59,130,246,.08) !important; color:#fff; }
+  .text-muted { color:#94a3b8 !important; }
+  .stat-card { border-radius:12px; padding:1.4rem; color:#fff; position:relative; overflow:hidden; }
+  .stat-card::after { content:''; position:absolute; right:-30px; bottom:-30px; width:120px; height:120px; background:rgba(255,255,255,.08); border-radius:50%; }
   .stat-card h2 { font-size:2.2rem; margin:0; font-weight:700; }
-  .stat-card p  { font-size:.75rem; opacity:.8; letter-spacing:.05em; margin-bottom:.3rem; font-weight:600; }
-  .api-doc { background:#0f172a; border-radius:8px; padding:.8rem; }
+  .stat-card p { font-size:.7rem; opacity:.85; letter-spacing:.05em; margin-bottom:.3rem; font-weight:700; text-transform:uppercase; }
+  .api-doc { background:#0f172a; border:1px solid #334155; border-radius:8px; padding:.8rem; }
   .api-doc code { color:#86efac; font-size:.78rem; }
   .api-method { font-weight:700; font-size:.7rem; padding:2px 6px; border-radius:4px; }
   .method-get { background:#dcfce7; color:#15803d; }
   .method-post { background:#dbeafe; color:#1d4ed8; }
   .method-patch { background:#fef9c3; color:#854d0e; }
-  .method-delete { background:#fee2e2; color:#991b1b; }
-  #loader { position:fixed; inset:0; background:rgba(15,23,42,.85); color:#fff;
+
+  /* Model performance bars */
+  .model-bar-row { display:flex; align-items:center; gap:.8rem; margin-bottom:.7rem; }
+  .model-bar-row .mname { flex:0 0 140px; font-size:.83rem; font-weight:600; }
+  .model-bar-row .mtrack { flex:1; background:#0f172a; border-radius:4px; height:10px; overflow:hidden; }
+  .model-bar-row .mfill { height:100%; background:linear-gradient(90deg,#3b82f6,#10b981); border-radius:4px; }
+  .model-bar-row .mscore { flex:0 0 60px; font-size:.83rem; font-weight:700; text-align:right; color:#86efac; }
+  .model-bar-row.winner .mname::after { content:' 🏆'; }
+  .model-bar-row.winner .mfill { background:linear-gradient(90deg,#10b981,#fbbf24); box-shadow:0 0 12px rgba(16,185,129,.6); }
+
+  /* Loader */
+  #loader { position:fixed; inset:0; background:rgba(10,14,26,.95); color:#fff;
             display:flex; align-items:center; justify-content:center; z-index:9999;
             flex-direction:column; gap:1rem; }
-  .spinner-border { color:#3b82f6; }
-  .err-box { color:#fff; background:#dc2626; padding:1rem 2rem; border-radius:8px; max-width:600px; }
-  .fc-event { cursor:pointer; }
+  .spinner-border { color:#3b82f6; width:3rem; height:3rem; }
+  .err-box { color:#fff; background:#dc2626; padding:1.5rem 2rem; border-radius:12px; max-width:600px; }
+
+  .fc { color:#e2e8f0; }
+  .fc .fc-toolbar-title { color:#fff; }
+  .fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid { border-color:#334155; }
+  .fc-day-today { background:rgba(59,130,246,.1) !important; }
+  .fc-button-primary { background:#1e293b !important; border-color:#334155 !important; color:#e2e8f0 !important; }
+  .fc-button-primary:hover { background:#334155 !important; }
+  .fc-button-active { background:#3b82f6 !important; border-color:#3b82f6 !important; }
 </style>
 </head>
 <body>
@@ -41,23 +151,48 @@
   <div id="status">Conectando ao back-end…</div>
 </div>
 
-<div class="topbar">
-  <div class="d-flex justify-content-between align-items-center">
-    <div>
-      <h4><i class="bi bi-hospital me-2"></i>CRM Hospital São Rafael — Painel Analítico</h4>
-      <small>Dashboard executivo alimentado em tempo real pela API REST</small>
+<!-- ────────────────────────── HERO ────────────────────────── -->
+<div class="hero">
+  <div class="hero-content">
+    <div class="brand-row">
+      <div class="brand">
+        <div class="brand-logo"><i class="bi bi-hospital text-white fs-4"></i></div>
+        <div>
+          <h1>HealthFlow CRM</h1>
+          <small>Hospital São Rafael · Painel Analítico Inteligente</small>
+        </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <span class="live-pill"><span class="dot"></span>API Online</span>
+        <button class="btn btn-sm btn-outline-light" onclick="bootstrap()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+      </div>
     </div>
-    <div class="d-flex gap-2 align-items-center">
-      <span class="badge bg-success" id="onlineBadge">● Online</span>
-      <button class="btn btn-sm btn-outline-light" onclick="bootstrap()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+
+    <span class="ai-badge"><i class="bi bi-cpu-fill"></i> POWERED BY MACHINE LEARNING · scikit-learn</span>
+    <h2>Decisões data-driven para <span class="grad">priorizar leads</span><br/>e aumentar a conversão hospitalar</h2>
+    <p class="lead">Modelo preditivo treinado com <b>500 leads</b> classifica em tempo real a probabilidade de conversão de cada novo paciente, e gera 4 recomendações estratégicas para a operação do call center.</p>
+
+    <div class="ml-stats">
+      <div class="ml-stat"><div class="num"><span class="grad">Árvore<br/>de Decisão</span></div><div class="lbl">Modelo Vencedor</div></div>
+      <div class="ml-stat"><div class="num" id="mlAcc">—<span class="pct">%</span></div><div class="lbl">Acurácia</div></div>
+      <div class="ml-stat"><div class="num" id="mlF1">—</div><div class="lbl">F1-Score</div></div>
+      <div class="ml-stat"><div class="num" id="mlAuc">—</div><div class="lbl">ROC-AUC</div></div>
+      <div class="ml-stat"><div class="num" id="mlTrain">—</div><div class="lbl">Leads Treino / Teste</div></div>
     </div>
   </div>
 </div>
-<div class="accent"></div>
 
+<!-- ────────────────────────── INSIGHTS BOOM! ────────────────────────── -->
+<div class="insights-section">
+  <h4 class="section-title"><i class="bi bi-lightbulb-fill"></i> Recomendações Estratégicas geradas pela IA <small>4 insights derivados do modelo</small></h4>
+  <div class="row g-3" id="insightCards"></div>
+</div>
+
+<!-- ────────────────────────── DASHBOARD ────────────────────────── -->
 <div class="container-fluid">
 
 <!-- KPIs -->
+<h4 class="section-title"><i class="bi bi-speedometer2 text-primary"></i> Indicadores Operacionais <small>tempo real · API REST</small></h4>
 <div class="row g-3 mb-4">
   <div class="col-md-3 col-sm-6"><div class="stat-card" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6)">
     <p>TOTAL DE LEADS</p><h2 id="kTotal">—</h2><small id="kTotalSub" class="opacity-75"></small></div></div>
@@ -69,7 +204,19 @@
     <p>AGENDAMENTOS (7d)</p><h2 id="kAg">—</h2><small id="kAgSub" class="opacity-75"></small></div></div>
 </div>
 
-<!-- Gráficos linha 1 -->
+<!-- ML Performance + Feature Importance -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Comparação de Modelos (F1-Score)</div>
+    <div class="card-body" id="modelBars"></div></div></div>
+  <div class="col-lg-6"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-diagram-3-fill text-warning me-2"></i>Importância das Features (Random Forest)</div>
+    <div class="card-body p-2 text-center">
+      <img src="ml/figures/04_importancia_features.png" alt="Importancia features"
+           style="max-width:100%; max-height:340px; border-radius:8px; background:#fff;"/></div></div></div>
+</div>
+
+<!-- Charts -->
 <div class="row g-3 mb-4">
   <div class="col-lg-4"><div class="card h-100">
     <div class="card-header py-3"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Distribuição por Status</div>
@@ -82,23 +229,21 @@
     <div class="card-body" style="height:300px"><canvas id="chartCanal"></canvas></div></div></div>
 </div>
 
-<!-- Gráficos linha 2 -->
 <div class="row g-3 mb-4">
   <div class="col-lg-7"><div class="card h-100">
     <div class="card-header py-3"><i class="bi bi-graph-up-arrow text-success me-2"></i>Evolução de Leads — últimos 6 meses</div>
     <div class="card-body" style="height:320px"><canvas id="chartTempo"></canvas></div></div></div>
   <div class="col-lg-5"><div class="card h-100">
-    <div class="card-header py-3"><i class="bi bi-trophy-fill text-warning me-2"></i>Top Procedimentos</div>
+    <div class="card-header py-3"><i class="bi bi-trophy-fill text-warning me-2"></i>Top Procedimentos por Demanda</div>
     <div class="card-body p-0"><table class="table table-sm mb-0">
       <thead><tr><th>#</th><th>Procedimento</th><th class="text-end">Leads</th></tr></thead>
       <tbody id="tblProcedimentos"></tbody></table></div></div></div>
 </div>
 
-<!-- Conversão por canal + Top Operadores -->
 <div class="row g-3 mb-4">
   <div class="col-lg-6"><div class="card h-100">
     <div class="card-header py-3"><i class="bi bi-funnel-fill text-success me-2"></i>Taxa de Conversão por Canal</div>
-    <div class="card-body" id="canalConv"><div class="text-muted small p-3">Sem dados suficientes (mín. 3 leads/canal)</div></div></div></div>
+    <div class="card-body" id="canalConv"></div></div></div>
   <div class="col-lg-6"><div class="card h-100">
     <div class="card-header py-3"><i class="bi bi-people-fill text-primary me-2"></i>Top Operadores (carga)</div>
     <div class="card-body p-0"><table class="table table-sm mb-0">
@@ -107,9 +252,10 @@
 </div>
 
 <!-- CALENDÁRIO -->
+<h4 class="section-title"><i class="bi bi-calendar3 text-primary"></i> Calendário de Agendamentos <small>FullCalendar · drag & view</small></h4>
 <div class="card mb-4">
   <div class="card-header d-flex justify-content-between align-items-center py-3">
-    <span><i class="bi bi-calendar3 text-primary me-2"></i>Calendário de Agendamentos</span>
+    <span><i class="bi bi-calendar-check text-primary me-2"></i>Visão geral</span>
     <div class="d-flex gap-2">
       <span class="badge bg-warning text-dark">Pendente</span>
       <span class="badge bg-success">Confirmado</span>
@@ -117,15 +263,28 @@
       <span class="badge bg-secondary">Cancelado</span>
     </div>
   </div>
-  <div class="card-body"><div id="calendar" style="min-height:560px"></div></div>
+  <div class="card-body" style="background:#fff; border-radius:0 0 12px 12px;"><div id="calendar" style="min-height:560px; color:#0f172a;"></div></div>
 </div>
 
-<!-- Leads Urgentes -->
 <div class="card mb-4">
-  <div class="card-header py-3"><i class="bi bi-exclamation-octagon-fill text-danger me-2"></i>Leads Urgentes (prioridade 1)</div>
-  <div class="card-body p-0"><table class="table table-hover mb-0">
+  <div class="card-header py-3"><i class="bi bi-exclamation-octagon-fill text-danger me-2"></i>Leads Urgentes (modelo IA priorizou)</div>
+  <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover mb-0">
     <thead><tr><th>Nome</th><th>Email</th><th>Score</th><th>Procedimento</th><th>Canal</th><th>Status</th></tr></thead>
-    <tbody id="tblUrgentes"></tbody></table></div>
+    <tbody id="tblUrgentes"></tbody></table></div></div>
+</div>
+
+<!-- Galeria figuras ML -->
+<h4 class="section-title"><i class="bi bi-cpu text-primary"></i> Análise do Modelo Preditivo <small>scikit-learn · 5-fold CV</small></h4>
+<div class="row g-3 mb-4">
+  <div class="col-md-4"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-bar-chart-line text-primary me-2"></i>Comparação Geral</div>
+    <div class="card-body p-2 text-center"><img src="ml/figures/01_comparacao_modelos.png" style="max-width:100%; border-radius:8px; background:#fff;"/></div></div></div>
+  <div class="col-md-4"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-grid-3x3-gap-fill text-success me-2"></i>Matriz de Confusão</div>
+    <div class="card-body p-2 text-center"><img src="ml/figures/02_matriz_confusao.png" style="max-width:100%; border-radius:8px; background:#fff;"/></div></div></div>
+  <div class="col-md-4"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-graph-up text-warning me-2"></i>Curva ROC</div>
+    <div class="card-body p-2 text-center"><img src="ml/figures/03_curva_roc.png" style="max-width:100%; border-radius:8px; background:#fff;"/></div></div></div>
 </div>
 
 <!-- Documentação -->
@@ -134,13 +293,13 @@
   <div class="card-body">
     <div class="row g-2">
       <div class="col-md-6">
-        <div class="api-doc mb-2"><span class="api-method method-post">POST</span> <code> /api/auth/login</code><div><code class="text-muted">→ JWT (200 OK / 401)</code></div></div>
-        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/leads/dashboard</code><div><code class="text-muted">→ KPIs (200 OK)</code></div></div>
-        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/leads?size=1000</code><div><code class="text-muted">→ base completa (200 OK)</code></div></div>
+        <div class="api-doc mb-2"><span class="api-method method-post">POST</span> <code> /api/auth/login</code><div><code class="text-muted">→ JWT (200 / 401)</code></div></div>
+        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/leads/dashboard</code><div><code class="text-muted">→ KPIs (200)</code></div></div>
+        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/leads?size=1000</code><div><code class="text-muted">→ base completa (200)</code></div></div>
       </div>
       <div class="col-md-6">
-        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/leads/urgentes</code><div><code class="text-muted">→ urgentes ordenados (200 OK)</code></div></div>
-        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/agendamentos</code><div><code class="text-muted">→ alimenta o calendário (200 OK)</code></div></div>
+        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/leads/urgentes</code><div><code class="text-muted">→ priorizados pelo modelo (200)</code></div></div>
+        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/agendamentos</code><div><code class="text-muted">→ alimenta calendário (200)</code></div></div>
         <div class="api-doc mb-2"><span class="api-method method-patch">PATCH</span> <code> /api/leads/{id}/status</code><div><code class="text-muted">→ transição validada (200 / 422)</code></div></div>
       </div>
     </div>
@@ -160,6 +319,16 @@ const palStatus = {'Novo':'#3b82f6','Em Atendimento':'#f59e0b','Aguardando Retor
 const palScore  = {'Muito Alto':'#dc2626','Alto':'#f59e0b','Médio':'#3b82f6','Baixo':'#94a3b8'};
 let charts = {};
 
+Chart.defaults.color = '#cbd5e1';
+Chart.defaults.borderColor = '#334155';
+
+const INSIGHT_META = [
+  { icon:'bi-megaphone-fill', title:'Estratégia de Canal', c1:'#3b82f6', c2:'#06b6d4' },
+  { icon:'bi-heart-pulse-fill', title:'Mix de Procedimentos', c1:'#10b981', c2:'#84cc16' },
+  { icon:'bi-stopwatch-fill', title:'SLA de Atendimento', c1:'#f59e0b', c2:'#ef4444' },
+  { icon:'bi-bell-fill', title:'Prevenção de Cancelamento', c1:'#7c3aed', c2:'#a855f7' },
+];
+
 async function api(path, opts={}, token) {
     const headers = { 'Content-Type':'application/json', ...(opts.headers||{}) };
     if (token) headers.Authorization = 'Bearer ' + token;
@@ -174,36 +343,33 @@ function showError(e) {
     document.getElementById('loader').innerHTML =
       '<div class="err-box"><h5><i class="bi bi-exclamation-triangle me-2"></i>Falha ao carregar</h5>' +
       '<p class="mb-2">' + e + '</p>' +
-      '<small class="opacity-75">Confirme que o Spring Boot está rodando em <b>http://localhost:8080</b> ' +
-      'e que CORS permite <b>http://localhost</b> ou <b>file://</b>. Se necessário, abra com <code>--allow-file-access-from-files</code>.</small></div>';
+      '<small class="opacity-75">Confirme que o Spring Boot está rodando em <b>http://localhost:8080</b>.</small></div>';
 }
 
 function rebuildChart(id, ctor) { if (charts[id]) charts[id].destroy(); charts[id] = ctor(); }
-
 function donut(id, data, palette){
     const labels = Object.keys(data||{}); const values = Object.values(data||{});
     rebuildChart(id, () => new Chart(document.getElementById(id),{type:'doughnut',
-        data:{labels,datasets:[{data:values,backgroundColor:labels.map(l=>palette[l]||'#94a3b8'),borderWidth:2,borderColor:'#fff'}]},
+        data:{labels,datasets:[{data:values,backgroundColor:labels.map(l=>palette[l]||'#94a3b8'),borderWidth:2,borderColor:'#1e293b'}]},
         options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
-            plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}}}}));
+            plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12,color:'#cbd5e1'}}}}}));
 }
 function bar(id, data){
     const labels = Object.keys(data||{}); const values = Object.values(data||{});
     rebuildChart(id, () => new Chart(document.getElementById(id),{type:'bar',
         data:{labels,datasets:[{data:values,backgroundColor:labels.map((_,i)=>palette[i%palette.length]),borderRadius:6}]},
-        options:{responsive:true,maintainAspectRatio:false,
-            plugins:{legend:{display:false}},
-            scales:{y:{beginAtZero:true,ticks:{precision:0}}}}}));
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+            scales:{y:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'},grid:{color:'#334155'}},
+                    x:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}}}}}));
 }
 function line(id, data){
     const labels = Object.keys(data||{}); const values = Object.values(data||{});
     rebuildChart(id, () => new Chart(document.getElementById(id),{type:'line',
-        data:{labels,datasets:[{label:'Leads criados',data:values,
-            borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.15)',
-            fill:true,tension:.35,pointRadius:5,pointBackgroundColor:'#3b82f6'}]},
-        options:{responsive:true,maintainAspectRatio:false,
-            plugins:{legend:{display:false}},
-            scales:{y:{beginAtZero:true,ticks:{precision:0}}}}}));
+        data:{labels,datasets:[{label:'Leads',data:values,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.18)',
+            fill:true,tension:.35,pointRadius:5,pointBackgroundColor:'#10b981'}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+            scales:{y:{beginAtZero:true,ticks:{precision:0,color:'#94a3b8'},grid:{color:'#334155'}},
+                    x:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}}}}}));
 }
 
 function groupCount(arr, key) {
@@ -211,46 +377,72 @@ function groupCount(arr, key) {
     arr.forEach(x => { const v = x[key] || 'Não informado'; m[v] = (m[v]||0)+1; });
     return Object.fromEntries(Object.entries(m).sort((a,b)=>b[1]-a[1]));
 }
-function ensureScoreOrder(map) {
-    const ordem = ['Muito Alto','Alto','Médio','Baixo'];
-    const out = {}; ordem.forEach(k => out[k] = map[k]||0); return out;
-}
-function ensureStatusOrder(map) {
-    const ordem = ['Novo','Em Atendimento','Aguardando Retorno','Convertido','Cancelado'];
-    const out = {}; ordem.forEach(k => out[k] = map[k]||0); return out;
-}
+const order = (map, ord) => { const o={}; ord.forEach(k=>o[k]=map[k]||0); return o; };
 function leadsPorMes(leads) {
     const fmt = d => d.toISOString().substring(0,7);
     const out = {}; const hoje = new Date();
     for (let i=5;i>=0;i--) { const d = new Date(hoje.getFullYear(), hoje.getMonth()-i, 1); out[fmt(d)] = 0; }
-    leads.forEach(l => {
-        if (!l.criadoEm) return;
-        const k = String(l.criadoEm).substring(0,7);
-        if (k in out) out[k]++;
-    });
+    leads.forEach(l => { if (!l.criadoEm) return; const k = String(l.criadoEm).substring(0,7); if (k in out) out[k]++; });
     return out;
 }
 function topProcedimentos(leads, n=5) {
-    const m = {};
-    leads.forEach(l => { if (l.procedimentoInteresse) m[l.procedimentoInteresse]=(m[l.procedimentoInteresse]||0)+1; });
+    const m = {}; leads.forEach(l => { if (l.procedimentoInteresse) m[l.procedimentoInteresse]=(m[l.procedimentoInteresse]||0)+1; });
     return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n);
 }
 function conversaoPorCanal(leads, n=5) {
     const m = {};
-    leads.forEach(l => {
-        const c = l.canalOrigem || 'Não informado';
-        if (!m[c]) m[c]={t:0,c:0};
-        m[c].t++; if (l.status === 'Convertido') m[c].c++;
-    });
-    return Object.entries(m).filter(([_,v])=>v.t>=3)
-        .map(([k,v])=>({label:k, taxa:v.c*100/v.t, c:v.c, t:v.t}))
+    leads.forEach(l => { const c = l.canalOrigem || 'Não informado'; if (!m[c]) m[c]={t:0,c:0}; m[c].t++; if (l.status === 'Convertido') m[c].c++; });
+    return Object.entries(m).filter(([_,v])=>v.t>=3).map(([k,v])=>({label:k, taxa:v.c*100/v.t, c:v.c, t:v.t}))
         .sort((a,b)=>b.taxa-a.taxa).slice(0,n);
+}
+
+function renderInsights(rel) {
+    const ins = rel.insights || [];
+    const html = ins.map((raw, i) => {
+        const meta = INSIGHT_META[i] || INSIGHT_META[0];
+        const m = raw.match(/^\d+\)\s*[A-ZÀ-Ú\s]+ — (.+?)\s*Recomendacao:\s*(.+)$/);
+        const finding = m ? m[1] : raw;
+        const action  = m ? m[2] : '';
+        return `
+        <div class="col-md-6 col-xl-3">
+          <div class="insight-card" style="--c1:${meta.c1};--c2:${meta.c2}">
+            <div class="ic-num">${i+1}</div>
+            <div class="ic-icon"><i class="bi ${meta.icon}"></i></div>
+            <h5>${meta.title}</h5>
+            <div class="ic-finding">${finding}</div>
+            ${action ? `<div class="ic-action"><i class="bi bi-lightbulb"></i><span>${action}</span></div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+    document.getElementById('insightCards').innerHTML = html;
+
+    // ML hero stats
+    const best = (rel.metricas||[]).find(m => m.Modelo === rel.melhor_modelo) || {};
+    document.getElementById('mlAcc').innerHTML  = (best.Acuracia*100).toFixed(1) + '<span class="pct">%</span>';
+    document.getElementById('mlF1').textContent  = best['F1-Score'].toFixed(3);
+    document.getElementById('mlAuc').textContent = best['ROC-AUC'].toFixed(3);
+    document.getElementById('mlTrain').textContent = rel.n_train + ' / ' + rel.n_test;
+
+    // Model bars
+    const sorted = [...(rel.metricas||[])].sort((a,b)=>b['F1-Score']-a['F1-Score']);
+    const max = sorted[0]['F1-Score'];
+    document.getElementById('modelBars').innerHTML = sorted.map((m,i) => `
+      <div class="model-bar-row ${i===0?'winner':''}">
+        <div class="mname">${m.Modelo}</div>
+        <div class="mtrack"><div class="mfill" style="width:${(m['F1-Score']/max*100).toFixed(1)}%"></div></div>
+        <div class="mscore">${m['F1-Score'].toFixed(3)}</div>
+      </div>
+    `).join('') + `<div class="text-muted small mt-3">Métrica: F1-Score no test set (n=${rel.n_test}). 5-fold CV no treino confirma o ranking.</div>`;
 }
 
 async function bootstrap() {
     document.getElementById('loader').style.display = 'flex';
     try {
-        setStatus('Autenticando…');
+        setStatus('Carregando insights de Machine Learning…');
+        const rel = await fetch('ml/relatorio_sprint4.json').then(r => r.json()).catch(() => ({}));
+        renderInsights(rel);
+
+        setStatus('Autenticando no back-end…');
         const auth = await api('/api/auth/login', { method:'POST', body: JSON.stringify(LOGIN) });
         const token = auth.token;
 
@@ -263,7 +455,6 @@ async function bootstrap() {
         ]);
         const leads = leadsPg.content || [];
 
-        // KPIs
         document.getElementById('kTotal').textContent = dash.totalLeads;
         document.getElementById('kTotalSub').textContent = leads.length + ' carregados';
         document.getElementById('kConv').textContent = dash.taxaConversao.toFixed(1) + '%';
@@ -277,19 +468,16 @@ async function bootstrap() {
         document.getElementById('kAg').textContent = prox;
         document.getElementById('kAgSub').textContent = ags.length + ' total';
 
-        // Charts
-        donut('chartStatus', ensureStatusOrder(groupCount(leads,'status')), palStatus);
-        donut('chartScore',  ensureScoreOrder(groupCount(leads,'leadScore')),  palScore);
+        donut('chartStatus', order(groupCount(leads,'status'),  ['Novo','Em Atendimento','Aguardando Retorno','Convertido','Cancelado']), palStatus);
+        donut('chartScore',  order(groupCount(leads,'leadScore'),['Muito Alto','Alto','Médio','Baixo']), palScore);
         bar  ('chartCanal',  groupCount(leads,'canalOrigem'));
         line ('chartTempo',  leadsPorMes(leads));
 
-        // Top procedimentos
         const proc = topProcedimentos(leads);
         document.getElementById('tblProcedimentos').innerHTML = proc.length ?
             proc.map(([k,v],i)=>`<tr><td class="text-muted">${i+1}</td><td class="small fw-semibold">${k}</td><td class="text-end"><span class="badge bg-primary">${v}</span></td></tr>`).join('') :
             '<tr><td colspan="3" class="text-center text-muted small p-3">Sem dados</td></tr>';
 
-        // Conversão por canal
         const conv = conversaoPorCanal(leads);
         document.getElementById('canalConv').innerHTML = conv.length ?
             conv.map(c => `
@@ -298,11 +486,10 @@ async function bootstrap() {
                     <span class="small fw-semibold">${c.label}</span>
                     <span class="small text-muted">${c.taxa.toFixed(1)}% (${c.c}/${c.t})</span>
                   </div>
-                  <div class="progress" style="height:10px"><div class="progress-bar bg-success" style="width:${c.taxa}%"></div></div>
+                  <div class="progress" style="height:10px; background:#0f172a;"><div class="progress-bar bg-success" style="width:${c.taxa}%"></div></div>
                 </div>`).join('') :
             '<div class="text-muted small p-3">Necessário ao menos 3 leads por canal</div>';
 
-        // Top operadores (a partir do detalhe do lead)
         const opMap = {};
         leads.forEach(l => { if (l.operador && l.operador.nome) opMap[l.operador.nome] = (opMap[l.operador.nome]||0)+1; });
         const ops = Object.entries(opMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -310,7 +497,6 @@ async function bootstrap() {
             ops.map(([k,v])=>`<tr><td class="small fw-semibold">${k}</td><td class="text-end"><span class="badge bg-primary">${v}</span></td></tr>`).join('') :
             '<tr><td colspan="2" class="text-center text-muted small p-3">Sem operadores</td></tr>';
 
-        // Urgentes
         document.getElementById('tblUrgentes').innerHTML = urgentes.length ?
             urgentes.map(l => `<tr>
                 <td class="fw-semibold small">${l.nome}</td>
@@ -321,7 +507,6 @@ async function bootstrap() {
                 <td><span class="badge bg-info text-dark">${l.status}</span></td></tr>`).join('') :
             '<tr><td colspan="6" class="text-center text-muted small p-3">Nenhum lead urgente</td></tr>';
 
-        // Calendário
         const colorFor = s => ({Confirmado:'#10b981', Cancelado:'#94a3b8', Realizado:'#06b6d4'}[s] || '#f59e0b');
         const events = ags.map(a => ({
             title: (a.lead && a.lead.nome ? a.lead.nome : 'Lead') + ' · ' + (a.procedimento || '—'),

@@ -1,0 +1,16 @@
+,0
+qtd_agendamentos,0.26730546127526494
+prioridade,0.06317276381077996
+qtd_interacoes,0.05977785850836973
+plano_saude_Amil,0.028171281781019686
+lead_score_Muito Alto,0.021526468295914192
+lead_score_Baixo,0.021486135856458023
+fator_canal_WhatsApp,0.02134555686401478
+fator_tempo_sem_resposta_Mais de 1 semana,0.02122357966308844
+procedimento_interesse_Exame de Imagem,0.02023721634778146
+procedimento_interesse_Consulta Cardiologista,0.020008626737623464
+fator_canal_Telefone,0.01994315570436958
+fator_tempo_sem_resposta_Mais de 48h,0.019378872083874545
+canal_origem_BLIP,0.018934415211410253
+canal_origem_WhatsApp,0.018844778812995455
+lead_score_Alto,0.01879815608844775

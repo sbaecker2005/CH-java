@@ -1,0 +1,34 @@
+-- ============================================================
+-- V4: Renomeia DOC → CPF e converte TELEFONE NUMBER → VARCHAR2
+-- Motivo: CPF deve ser armazenado como string (zeros à esquerda),
+--         e telefone como string para suportar formatos internacionais.
+-- ============================================================
+
+-- ─── USUARIO: renomear DOC → CPF e converter TELEFONE ────────────────────────
+
+-- 1. Adicionar nova coluna CPF como VARCHAR2
+ALTER TABLE USUARIO ADD (CPF VARCHAR2(11 CHAR));
+
+-- 2. Copiar dados existentes de DOC para CPF
+UPDATE USUARIO SET CPF = DOC WHERE DOC IS NOT NULL;
+
+-- 3. Adicionar constraint NOT NULL e UNIQUE na nova coluna CPF
+ALTER TABLE USUARIO MODIFY (CPF VARCHAR2(11 CHAR) NOT NULL);
+ALTER TABLE USUARIO ADD CONSTRAINT UQ_USR_CPF UNIQUE (CPF);
+
+-- 4. Remover constraint e coluna DOC antiga
+ALTER TABLE USUARIO DROP CONSTRAINT UQ_USR_DOC;
+ALTER TABLE USUARIO DROP COLUMN DOC;
+
+-- 5. Converter TELEFONE de NUMBER para VARCHAR2 em USUARIO
+ALTER TABLE USUARIO ADD (TELEFONE_NEW VARCHAR2(20 CHAR));
+UPDATE USUARIO SET TELEFONE_NEW = TO_CHAR(TELEFONE) WHERE TELEFONE IS NOT NULL;
+ALTER TABLE USUARIO DROP COLUMN TELEFONE;
+ALTER TABLE USUARIO RENAME COLUMN TELEFONE_NEW TO TELEFONE;
+
+-- ─── LEAD: converter TELEFONE NUMBER → VARCHAR2 ───────────────────────────────
+
+ALTER TABLE LEAD ADD (TELEFONE_NEW VARCHAR2(20 CHAR));
+UPDATE LEAD SET TELEFONE_NEW = TO_CHAR(TELEFONE) WHERE TELEFONE IS NOT NULL;
+ALTER TABLE LEAD DROP COLUMN TELEFONE;
+ALTER TABLE LEAD RENAME COLUMN TELEFONE_NEW TO TELEFONE;

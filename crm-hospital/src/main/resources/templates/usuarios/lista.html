@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/layout :: head('Usuários')}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar(${paginaAtiva})}"></div>
+
+<div class="topbar">
+    <div>
+        <h4 class="mb-0 fw-bold">Usuários / Operadores</h4>
+        <small class="text-muted">Gestão de operadores com validação de CPF e autenticação JWT</small>
+    </div>
+    <a href="/swagger-ui.html#/Usuários" target="_blank" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-code-slash me-1"></i>Ver API
+    </a>
+</div>
+
+<div class="main-content">
+
+    <div th:if="${erro}" class="alert alert-danger mb-4">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${erro}"></span>
+    </div>
+
+    <!-- Tabela de usuários -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <span><i class="bi bi-people-fill text-primary me-2"></i>Operadores Cadastrados</span>
+            <span class="badge bg-secondary" th:text="${usuarios != null ? usuarios.size() : 0} + ' operadores'"></span>
+        </div>
+        <div class="card-body p-0">
+            <div th:if="${usuarios == null or #lists.isEmpty(usuarios)}" class="p-5 text-center text-muted">
+                <i class="bi bi-person-x fs-1"></i>
+                <p class="mt-2">Nenhum usuário cadastrado</p>
+            </div>
+            <div class="table-responsive" th:if="${usuarios != null and !#lists.isEmpty(usuarios)}">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>CPF/Doc</th>
+                            <th>Telefone</th>
+                            <th>Nascimento</th>
+                            <th>Perfil</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="u : ${usuarios}">
+                            <td class="small text-muted" th:text="${u.id}"></td>
+                            <td class="fw-semibold" th:text="${u.nome}"></td>
+                            <td class="small" th:text="${u.email}"></td>
+                            <td class="small text-muted" th:text="${u.doc ?: '—'}"></td>
+                            <td class="small text-muted" th:text="${u.telefone ?: '—'}"></td>
+                            <td class="small text-muted" th:text="${u.dataNasc ?: '—'}"></td>
+                            <td>
+                                <span class="badge"
+                                    th:text="${u.role}"
+                                    th:classappend="${u.role == 'ROLE_ADMIN'} ? 'bg-danger' : 'bg-primary'">
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentação da API -->
+    <div class="card">
+        <div class="card-header py-3">
+            <i class="bi bi-code-slash text-primary me-2"></i>
+            Endpoints disponíveis — <code>/api/usuarios</code> e <code>/api/auth</code>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <p class="fw-semibold small text-uppercase text-muted mb-2">Usuários (CRUD)</p>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-post">POST</span>
+                        <code> /api/usuarios</code>
+                        <div><code class="text-muted" style="font-size:0.75rem">Cadastrar operador → 201 Created | 400 CPF inválido</code></div>
+                    </div>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-get">GET</span>
+                        <code> /api/usuarios</code>
+                        <div><code class="text-muted" style="font-size:0.75rem">Listar todos → 200 OK</code></div>
+                    </div>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-get">GET</span>
+                        <code> /api/usuarios/{id}</code>
+                        <div><code class="text-muted" style="font-size:0.75rem">Buscar por ID → 200 OK | 404</code></div>
+                    </div>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-put">PUT</span>
+                        <code> /api/usuarios/{id}</code>
+                        <div><code class="text-muted" style="font-size:0.75rem">Atualizar dados → 200 OK</code></div>
+                    </div>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-delete">DELETE</span>
+                        <code> /api/usuarios/{id}</code>
+                        <div><code class="text-muted" style="font-size:0.75rem">Remover → 204 No Content (ADMIN)</code></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <p class="fw-semibold small text-uppercase text-muted mb-2">Autenticação JWT</p>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-post">POST</span>
+                        <code> /api/auth/login</code>
+                        <div><code class="text-muted" style="font-size:0.75rem">Body: {email, senha} → {"token":"eyJ..."}</code></div>
+                    </div>
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <p class="mb-1 fw-semibold small">Como usar o token:</p>
+                        <p class="small mb-1 text-muted">Adicione no header de todas as requisições protegidas:</p>
+                        <code class="small">Authorization: Bearer &lt;token&gt;</code>
+                        <hr class="my-2"/>
+                        <p class="mb-1 fw-semibold small">Perfis disponíveis:</p>
+                        <ul class="small mb-0 text-muted">
+                            <li><code>ROLE_ADMIN</code> → acesso total, incluindo DELETE</li>
+                            <li><code>ROLE_OPERADOR</code> → acesso às operações de CRM</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

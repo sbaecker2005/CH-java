@@ -153,25 +153,108 @@ public class LeadService {
     @Transactional(readOnly = true)
     public DashboardResponse getDashboard() {
         List<Lead> todos = leadRepository.findAll();
-
         long total = todos.size();
+
         long urgentes = todos.stream().filter(l -> Boolean.TRUE.equals(l.getFatorUrgencia())).count();
         long convertidos = todos.stream().filter(l -> StatusLead.CONVERTIDO.equals(l.getStatus())).count();
-        double taxaConversao = total > 0 ? (convertidos * 100.0 / total) : 0;
+        long cancelados = todos.stream().filter(l -> StatusLead.CANCELADO.equals(l.getStatus())).count();
 
-        // Contagem por status usando groupingBy — uma única passagem na lista
+        double taxaConversao = total > 0 ? Math.round((convertidos * 100.0 / total) * 10.0) / 10.0 : 0.0;
+        double taxaCancelamento = total > 0 ? Math.round((cancelados * 100.0 / total) * 10.0) / 10.0 : 0.0;
+        double taxaUrgencia = total > 0 ? Math.round((urgentes * 100.0 / total) * 10.0) / 10.0 : 0.0;
+
+        // Status — ordem fixa conforme enum
         Map<StatusLead, Long> countPorStatus = todos.stream()
                 .collect(Collectors.groupingBy(
                         l -> l.getStatus() != null ? l.getStatus() : StatusLead.NOVO,
-                        Collectors.counting()
-                ));
-
+                        Collectors.counting()));
         Map<String, Long> porStatus = new LinkedHashMap<>();
         for (StatusLead s : StatusLead.values()) {
             porStatus.put(s.getValor(), countPorStatus.getOrDefault(s, 0L));
         }
 
-        long agendamentosHoje = agendamentoRepository.findByData(LocalDate.now()).size();
+        // Canal — ordenado por volume desc
+        Map<String, Long> porCanal = todos.stream()
+                .collect(Collectors.groupingBy(
+                        l -> l.getCanalOrigem() != null ? l.getCanalOrigem() : "Não informado",
+                        Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                        (a, b) -> a, LinkedHashMap::new));
+
+        // Score — ordem Muito Alto / Alto / Medio / Baixo
+        List<String> ordemScore = List.of("Muito Alto", "Alto", "Médio", "Baixo");
+        Map<String, Long> porScore = new LinkedHashMap<>();
+        for (String s : ordemScore) {
+            long c = todos.stream().filter(l -> s.equals(l.getLeadScore())).count();
+            porScore.put(s, c);
+        }
+
+        // Time series — ultimos 6 meses
+        Map<String, Long> porMes = new LinkedHashMap<>();
+        LocalDate hoje = LocalDate.now();
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM");
+        for (int i = 5; i >= 0; i--) {
+            LocalDate ref = hoje.minusMonths(i);
+            String key = ref.format(fmt);
+            long count = todos.stream()
+                    .filter(l -> l.getCriadoEm() != null && key.equals(l.getCriadoEm().format(fmt)))
+                    .count();
+            porMes.put(key, count);
+        }
+
+        // Top procedimentos por demanda
+        List<DashboardResponse.RankingItem> topProc = todos.stream()
+                .filter(l -> l.getProcedimentoInteresse() != null && !l.getProcedimentoInteresse().isBlank())
+                .collect(Collectors.groupingBy(Lead::getProcedimentoInteresse, Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .map(e -> DashboardResponse.RankingItem.builder()
+                        .label(e.getKey()).valor(e.getValue())
+                        .descricao(e.getValue() + " leads").build())
+                .toList();
+
+        // Top canais por taxa de conversao
+        Map<String, long[]> canalConv = new LinkedHashMap<>();
+        for (Lead l : todos) {
+            String canal = l.getCanalOrigem() != null ? l.getCanalOrigem() : "Não informado";
+            canalConv.computeIfAbsent(canal, k -> new long[2]);
+            canalConv.get(canal)[0]++;
+            if (StatusLead.CONVERTIDO.equals(l.getStatus())) canalConv.get(canal)[1]++;
+        }
+        List<DashboardResponse.RankingItem> topCanal = canalConv.entrySet().stream()
+                .filter(e -> e.getValue()[0] >= 3)
+                .map(e -> {
+                    double tx = e.getValue()[1] * 100.0 / e.getValue()[0];
+                    return DashboardResponse.RankingItem.builder()
+                            .label(e.getKey())
+                            .valor(Math.round(tx * 10.0) / 10.0)
+                            .descricao(String.format("%.1f%% (%d/%d)", tx, e.getValue()[1], e.getValue()[0]))
+                            .build();
+                })
+                .sorted((a, b) -> Double.compare(b.getValor(), a.getValor()))
+                .limit(5)
+                .toList();
+
+        // Top operadores
+        List<DashboardResponse.RankingItem> topOp = todos.stream()
+                .filter(l -> l.getOperador() != null)
+                .collect(Collectors.groupingBy(l -> l.getOperador().getNome(), Collectors.counting()))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .map(e -> DashboardResponse.RankingItem.builder()
+                        .label(e.getKey()).valor(e.getValue())
+                        .descricao(e.getValue() + " leads").build())
+                .toList();
+
+        long agHoje = agendamentoRepository.findByData(LocalDate.now()).size();
+        long agSemana = 0;
+        for (int i = 0; i < 7; i++) {
+            agSemana += agendamentoRepository.findByData(LocalDate.now().plusDays(i)).size();
+        }
         long naoLidas = notificacaoRepository.countByLidaFalse();
 
         return DashboardResponse.builder()
@@ -179,9 +262,18 @@ public class LeadService {
                 .leadsNovos(countPorStatus.getOrDefault(StatusLead.NOVO, 0L))
                 .leadsUrgentes(urgentes)
                 .leadsConvertidos(convertidos)
-                .taxaConversao(Math.round(taxaConversao * 10.0) / 10.0)
+                .taxaConversao(taxaConversao)
+                .taxaCancelamento(taxaCancelamento)
+                .taxaUrgencia(taxaUrgencia)
                 .leadsPorStatus(porStatus)
-                .agendamentosHoje(agendamentosHoje)
+                .leadsPorCanal(porCanal)
+                .leadsPorScore(porScore)
+                .leadsPorMes(porMes)
+                .topProcedimentos(topProc)
+                .topCanaisConversao(topCanal)
+                .topOperadores(topOp)
+                .agendamentosHoje(agHoje)
+                .agendamentosSemana(agSemana)
                 .notificacoesNaoLidas(naoLidas)
                 .build();
     }

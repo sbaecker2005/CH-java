@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Painel Analítico — CRM Hospital São Rafael</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"/>
+<style>
+  body { background:#f1f5f9; font-family:'Segoe UI',system-ui,sans-serif; }
+  .topbar { background:#0f172a; color:#fff; padding:1rem 2rem; box-shadow:0 2px 6px rgba(0,0,0,.15); }
+  .topbar h4 { margin:0; font-weight:700; }
+  .topbar small { color:#94a3b8; }
+  .accent { height:4px; background:linear-gradient(90deg,#3b82f6,#10b981,#f59e0b,#ef4444); }
+  .container-fluid { padding:1.5rem 2rem; max-width:1600px; }
+  .card { border:none; box-shadow:0 1px 3px rgba(0,0,0,.08); border-radius:12px; }
+  .card-header { background:transparent; border-bottom:1px solid #f1f5f9; font-weight:600; }
+  .stat-card { border-radius:12px; padding:1.4rem; color:#fff; }
+  .stat-card h2 { font-size:2.2rem; margin:0; font-weight:700; }
+  .stat-card p  { font-size:.75rem; opacity:.8; letter-spacing:.05em; margin-bottom:.3rem; font-weight:600; }
+  .api-doc { background:#0f172a; border-radius:8px; padding:.8rem; }
+  .api-doc code { color:#86efac; font-size:.78rem; }
+  .api-method { font-weight:700; font-size:.7rem; padding:2px 6px; border-radius:4px; }
+  .method-get { background:#dcfce7; color:#15803d; }
+  .method-post { background:#dbeafe; color:#1d4ed8; }
+  .method-patch { background:#fef9c3; color:#854d0e; }
+  .method-delete { background:#fee2e2; color:#991b1b; }
+  #loader { position:fixed; inset:0; background:rgba(15,23,42,.85); color:#fff;
+            display:flex; align-items:center; justify-content:center; z-index:9999;
+            flex-direction:column; gap:1rem; }
+  .spinner-border { color:#3b82f6; }
+  .err-box { color:#fff; background:#dc2626; padding:1rem 2rem; border-radius:8px; max-width:600px; }
+  .fc-event { cursor:pointer; }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="spinner-border" role="status"></div>
+  <div id="status">Conectando ao back-end…</div>
+</div>
+
+<div class="topbar">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h4><i class="bi bi-hospital me-2"></i>CRM Hospital São Rafael — Painel Analítico</h4>
+      <small>Dashboard executivo alimentado em tempo real pela API REST</small>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <span class="badge bg-success" id="onlineBadge">● Online</span>
+      <button class="btn btn-sm btn-outline-light" onclick="bootstrap()"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+    </div>
+  </div>
+</div>
+<div class="accent"></div>
+
+<div class="container-fluid">
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3 col-sm-6"><div class="stat-card" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6)">
+    <p>TOTAL DE LEADS</p><h2 id="kTotal">—</h2><small id="kTotalSub" class="opacity-75"></small></div></div>
+  <div class="col-md-3 col-sm-6"><div class="stat-card" style="background:linear-gradient(135deg,#059669,#10b981)">
+    <p>TAXA DE CONVERSÃO</p><h2 id="kConv">—</h2><small id="kConvSub" class="opacity-75"></small></div></div>
+  <div class="col-md-3 col-sm-6"><div class="stat-card" style="background:linear-gradient(135deg,#dc2626,#ef4444)">
+    <p>LEADS URGENTES</p><h2 id="kUrg">—</h2><small id="kUrgSub" class="opacity-75"></small></div></div>
+  <div class="col-md-3 col-sm-6"><div class="stat-card" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">
+    <p>AGENDAMENTOS (7d)</p><h2 id="kAg">—</h2><small id="kAgSub" class="opacity-75"></small></div></div>
+</div>
+
+<!-- Gráficos linha 1 -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-4"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Distribuição por Status</div>
+    <div class="card-body" style="height:300px"><canvas id="chartStatus"></canvas></div></div></div>
+  <div class="col-lg-4"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-stars text-warning me-2"></i>Distribuição por Lead Score</div>
+    <div class="card-body" style="height:300px"><canvas id="chartScore"></canvas></div></div></div>
+  <div class="col-lg-4"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-broadcast text-info me-2"></i>Leads por Canal</div>
+    <div class="card-body" style="height:300px"><canvas id="chartCanal"></canvas></div></div></div>
+</div>
+
+<!-- Gráficos linha 2 -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-7"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-graph-up-arrow text-success me-2"></i>Evolução de Leads — últimos 6 meses</div>
+    <div class="card-body" style="height:320px"><canvas id="chartTempo"></canvas></div></div></div>
+  <div class="col-lg-5"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-trophy-fill text-warning me-2"></i>Top Procedimentos</div>
+    <div class="card-body p-0"><table class="table table-sm mb-0">
+      <thead><tr><th>#</th><th>Procedimento</th><th class="text-end">Leads</th></tr></thead>
+      <tbody id="tblProcedimentos"></tbody></table></div></div></div>
+</div>
+
+<!-- Conversão por canal + Top Operadores -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-6"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-funnel-fill text-success me-2"></i>Taxa de Conversão por Canal</div>
+    <div class="card-body" id="canalConv"><div class="text-muted small p-3">Sem dados suficientes (mín. 3 leads/canal)</div></div></div></div>
+  <div class="col-lg-6"><div class="card h-100">
+    <div class="card-header py-3"><i class="bi bi-people-fill text-primary me-2"></i>Top Operadores (carga)</div>
+    <div class="card-body p-0"><table class="table table-sm mb-0">
+      <thead><tr><th>Operador</th><th class="text-end">Leads</th></tr></thead>
+      <tbody id="tblOperadores"></tbody></table></div></div></div>
+</div>
+
+<!-- CALENDÁRIO -->
+<div class="card mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center py-3">
+    <span><i class="bi bi-calendar3 text-primary me-2"></i>Calendário de Agendamentos</span>
+    <div class="d-flex gap-2">
+      <span class="badge bg-warning text-dark">Pendente</span>
+      <span class="badge bg-success">Confirmado</span>
+      <span class="badge bg-info text-dark">Realizado</span>
+      <span class="badge bg-secondary">Cancelado</span>
+    </div>
+  </div>
+  <div class="card-body"><div id="calendar" style="min-height:560px"></div></div>
+</div>
+
+<!-- Leads Urgentes -->
+<div class="card mb-4">
+  <div class="card-header py-3"><i class="bi bi-exclamation-octagon-fill text-danger me-2"></i>Leads Urgentes (prioridade 1)</div>
+  <div class="card-body p-0"><table class="table table-hover mb-0">
+    <thead><tr><th>Nome</th><th>Email</th><th>Score</th><th>Procedimento</th><th>Canal</th><th>Status</th></tr></thead>
+    <tbody id="tblUrgentes"></tbody></table></div>
+</div>
+
+<!-- Documentação -->
+<div class="card mb-4">
+  <div class="card-header py-3"><i class="bi bi-code-slash text-primary me-2"></i>Endpoints REST consumidos por este painel</div>
+  <div class="card-body">
+    <div class="row g-2">
+      <div class="col-md-6">
+        <div class="api-doc mb-2"><span class="api-method method-post">POST</span> <code> /api/auth/login</code><div><code class="text-muted">→ JWT (200 OK / 401)</code></div></div>
+        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/leads/dashboard</code><div><code class="text-muted">→ KPIs (200 OK)</code></div></div>
+        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/leads?size=1000</code><div><code class="text-muted">→ base completa (200 OK)</code></div></div>
+      </div>
+      <div class="col-md-6">
+        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/leads/urgentes</code><div><code class="text-muted">→ urgentes ordenados (200 OK)</code></div></div>
+        <div class="api-doc mb-2"><span class="api-method method-get">GET</span> <code> /api/agendamentos</code><div><code class="text-muted">→ alimenta o calendário (200 OK)</code></div></div>
+        <div class="api-doc mb-2"><span class="api-method method-patch">PATCH</span> <code> /api/leads/{id}/status</code><div><code class="text-muted">→ transição validada (200 / 422)</code></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script>
+const API = 'http://localhost:8080';
+const LOGIN = { email: 'teste.operador@hospital.com', senha: 'Senha@123' };
+const palette = ['#3b82f6','#10b981','#f59e0b','#ef4444','#7c3aed','#06b6d4','#84cc16','#f97316'];
+const palStatus = {'Novo':'#3b82f6','Em Atendimento':'#f59e0b','Aguardando Retorno':'#06b6d4','Convertido':'#10b981','Cancelado':'#94a3b8'};
+const palScore  = {'Muito Alto':'#dc2626','Alto':'#f59e0b','Médio':'#3b82f6','Baixo':'#94a3b8'};
+let charts = {};
+
+async function api(path, opts={}, token) {
+    const headers = { 'Content-Type':'application/json', ...(opts.headers||{}) };
+    if (token) headers.Authorization = 'Bearer ' + token;
+    const r = await fetch(API + path, { ...opts, headers });
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' em ' + path);
+    return r.json();
+}
+
+function setStatus(t) { document.getElementById('status').textContent = t; }
+function hideLoader() { document.getElementById('loader').style.display = 'none'; }
+function showError(e) {
+    document.getElementById('loader').innerHTML =
+      '<div class="err-box"><h5><i class="bi bi-exclamation-triangle me-2"></i>Falha ao carregar</h5>' +
+      '<p class="mb-2">' + e + '</p>' +
+      '<small class="opacity-75">Confirme que o Spring Boot está rodando em <b>http://localhost:8080</b> ' +
+      'e que CORS permite <b>http://localhost</b> ou <b>file://</b>. Se necessário, abra com <code>--allow-file-access-from-files</code>.</small></div>';
+}
+
+function rebuildChart(id, ctor) { if (charts[id]) charts[id].destroy(); charts[id] = ctor(); }
+
+function donut(id, data, palette){
+    const labels = Object.keys(data||{}); const values = Object.values(data||{});
+    rebuildChart(id, () => new Chart(document.getElementById(id),{type:'doughnut',
+        data:{labels,datasets:[{data:values,backgroundColor:labels.map(l=>palette[l]||'#94a3b8'),borderWidth:2,borderColor:'#fff'}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+            plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:12}}}}}));
+}
+function bar(id, data){
+    const labels = Object.keys(data||{}); const values = Object.values(data||{});
+    rebuildChart(id, () => new Chart(document.getElementById(id),{type:'bar',
+        data:{labels,datasets:[{data:values,backgroundColor:labels.map((_,i)=>palette[i%palette.length]),borderRadius:6}]},
+        options:{responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{display:false}},
+            scales:{y:{beginAtZero:true,ticks:{precision:0}}}}}));
+}
+function line(id, data){
+    const labels = Object.keys(data||{}); const values = Object.values(data||{});
+    rebuildChart(id, () => new Chart(document.getElementById(id),{type:'line',
+        data:{labels,datasets:[{label:'Leads criados',data:values,
+            borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.15)',
+            fill:true,tension:.35,pointRadius:5,pointBackgroundColor:'#3b82f6'}]},
+        options:{responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{display:false}},
+            scales:{y:{beginAtZero:true,ticks:{precision:0}}}}}));
+}
+
+function groupCount(arr, key) {
+    const m = {};
+    arr.forEach(x => { const v = x[key] || 'Não informado'; m[v] = (m[v]||0)+1; });
+    return Object.fromEntries(Object.entries(m).sort((a,b)=>b[1]-a[1]));
+}
+function ensureScoreOrder(map) {
+    const ordem = ['Muito Alto','Alto','Médio','Baixo'];
+    const out = {}; ordem.forEach(k => out[k] = map[k]||0); return out;
+}
+function ensureStatusOrder(map) {
+    const ordem = ['Novo','Em Atendimento','Aguardando Retorno','Convertido','Cancelado'];
+    const out = {}; ordem.forEach(k => out[k] = map[k]||0); return out;
+}
+function leadsPorMes(leads) {
+    const fmt = d => d.toISOString().substring(0,7);
+    const out = {}; const hoje = new Date();
+    for (let i=5;i>=0;i--) { const d = new Date(hoje.getFullYear(), hoje.getMonth()-i, 1); out[fmt(d)] = 0; }
+    leads.forEach(l => {
+        if (!l.criadoEm) return;
+        const k = String(l.criadoEm).substring(0,7);
+        if (k in out) out[k]++;
+    });
+    return out;
+}
+function topProcedimentos(leads, n=5) {
+    const m = {};
+    leads.forEach(l => { if (l.procedimentoInteresse) m[l.procedimentoInteresse]=(m[l.procedimentoInteresse]||0)+1; });
+    return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,n);
+}
+function conversaoPorCanal(leads, n=5) {
+    const m = {};
+    leads.forEach(l => {
+        const c = l.canalOrigem || 'Não informado';
+        if (!m[c]) m[c]={t:0,c:0};
+        m[c].t++; if (l.status === 'Convertido') m[c].c++;
+    });
+    return Object.entries(m).filter(([_,v])=>v.t>=3)
+        .map(([k,v])=>({label:k, taxa:v.c*100/v.t, c:v.c, t:v.t}))
+        .sort((a,b)=>b.taxa-a.taxa).slice(0,n);
+}
+
+async function bootstrap() {
+    document.getElementById('loader').style.display = 'flex';
+    try {
+        setStatus('Autenticando…');
+        const auth = await api('/api/auth/login', { method:'POST', body: JSON.stringify(LOGIN) });
+        const token = auth.token;
+
+        setStatus('Carregando leads e agendamentos…');
+        const [dash, leadsPg, urgentes, ags] = await Promise.all([
+            api('/api/leads/dashboard', {}, token),
+            api('/api/leads?page=0&size=1000', {}, token),
+            api('/api/leads/urgentes', {}, token),
+            api('/api/agendamentos', {}, token),
+        ]);
+        const leads = leadsPg.content || [];
+
+        // KPIs
+        document.getElementById('kTotal').textContent = dash.totalLeads;
+        document.getElementById('kTotalSub').textContent = leads.length + ' carregados';
+        document.getElementById('kConv').textContent = dash.taxaConversao.toFixed(1) + '%';
+        document.getElementById('kConvSub').textContent = dash.leadsConvertidos + ' convertidos';
+        document.getElementById('kUrg').textContent = dash.leadsUrgentes;
+        const tx = dash.totalLeads ? (dash.leadsUrgentes*100/dash.totalLeads).toFixed(1) : '0.0';
+        document.getElementById('kUrgSub').textContent = tx + '% do total';
+        const hoje = new Date(); hoje.setHours(0,0,0,0);
+        const sete = new Date(hoje); sete.setDate(hoje.getDate()+7);
+        const prox = ags.filter(a => a.dataHora && new Date(a.dataHora) >= hoje && new Date(a.dataHora) < sete).length;
+        document.getElementById('kAg').textContent = prox;
+        document.getElementById('kAgSub').textContent = ags.length + ' total';
+
+        // Charts
+        donut('chartStatus', ensureStatusOrder(groupCount(leads,'status')), palStatus);
+        donut('chartScore',  ensureScoreOrder(groupCount(leads,'leadScore')),  palScore);
+        bar  ('chartCanal',  groupCount(leads,'canalOrigem'));
+        line ('chartTempo',  leadsPorMes(leads));
+
+        // Top procedimentos
+        const proc = topProcedimentos(leads);
+        document.getElementById('tblProcedimentos').innerHTML = proc.length ?
+            proc.map(([k,v],i)=>`<tr><td class="text-muted">${i+1}</td><td class="small fw-semibold">${k}</td><td class="text-end"><span class="badge bg-primary">${v}</span></td></tr>`).join('') :
+            '<tr><td colspan="3" class="text-center text-muted small p-3">Sem dados</td></tr>';
+
+        // Conversão por canal
+        const conv = conversaoPorCanal(leads);
+        document.getElementById('canalConv').innerHTML = conv.length ?
+            conv.map(c => `
+                <div class="mb-3">
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="small fw-semibold">${c.label}</span>
+                    <span class="small text-muted">${c.taxa.toFixed(1)}% (${c.c}/${c.t})</span>
+                  </div>
+                  <div class="progress" style="height:10px"><div class="progress-bar bg-success" style="width:${c.taxa}%"></div></div>
+                </div>`).join('') :
+            '<div class="text-muted small p-3">Necessário ao menos 3 leads por canal</div>';
+
+        // Top operadores (a partir do detalhe do lead)
+        const opMap = {};
+        leads.forEach(l => { if (l.operador && l.operador.nome) opMap[l.operador.nome] = (opMap[l.operador.nome]||0)+1; });
+        const ops = Object.entries(opMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+        document.getElementById('tblOperadores').innerHTML = ops.length ?
+            ops.map(([k,v])=>`<tr><td class="small fw-semibold">${k}</td><td class="text-end"><span class="badge bg-primary">${v}</span></td></tr>`).join('') :
+            '<tr><td colspan="2" class="text-center text-muted small p-3">Sem operadores</td></tr>';
+
+        // Urgentes
+        document.getElementById('tblUrgentes').innerHTML = urgentes.length ?
+            urgentes.map(l => `<tr>
+                <td class="fw-semibold small">${l.nome}</td>
+                <td class="small text-muted">${l.email||'—'}</td>
+                <td><span class="badge bg-danger">${l.leadScore}</span></td>
+                <td class="small">${l.procedimentoInteresse||'—'}</td>
+                <td class="small">${l.canalOrigem||'—'}</td>
+                <td><span class="badge bg-info text-dark">${l.status}</span></td></tr>`).join('') :
+            '<tr><td colspan="6" class="text-center text-muted small p-3">Nenhum lead urgente</td></tr>';
+
+        // Calendário
+        const colorFor = s => ({Confirmado:'#10b981', Cancelado:'#94a3b8', Realizado:'#06b6d4'}[s] || '#f59e0b');
+        const events = ags.map(a => ({
+            title: (a.lead && a.lead.nome ? a.lead.nome : 'Lead') + ' · ' + (a.procedimento || '—'),
+            start: a.dataHora,
+            backgroundColor: colorFor(a.status),
+            borderColor: colorFor(a.status),
+            extendedProps: { status: a.status }
+        }));
+        const calEl = document.getElementById('calendar');
+        if (calEl._fc) calEl._fc.destroy();
+        calEl._fc = new FullCalendar.Calendar(calEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt-br',
+            headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,timeGridWeek,listWeek' },
+            buttonText: { today:'hoje', month:'mês', week:'semana', list:'lista' },
+            height: 580,
+            events,
+            eventDidMount: i => i.el.title = i.event.title + ' — ' + (i.event.extendedProps.status || '')
+        });
+        calEl._fc.render();
+
+        hideLoader();
+    } catch (e) {
+        console.error(e);
+        showError(e.message);
+    }
+}
+
+bootstrap();
+</script>
+</body>
+</html>

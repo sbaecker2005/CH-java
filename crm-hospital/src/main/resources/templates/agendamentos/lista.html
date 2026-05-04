@@ -8,7 +8,7 @@
 <div class="topbar">
     <div>
         <h4 class="mb-0 fw-bold">Agendamentos</h4>
-        <small class="text-muted">Gestão de agendamentos com validação de conflito e lembretes por IA</small>
+        <small class="text-muted">Calendário interativo + visão tabular dos agendamentos</small>
     </div>
     <a href="/swagger-ui.html#/Agendamentos" target="_blank" class="btn btn-sm btn-outline-primary">
         <i class="bi bi-code-slash me-1"></i>Ver API
@@ -21,10 +21,54 @@
         <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${erro}"></span>
     </div>
 
-    <!-- Tabela de Agendamentos -->
+    <!-- KPIs do calendário -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6)">
+                <p class="mb-1 opacity-75 small fw-semibold">TOTAL</p>
+                <h2 class="mb-0 fw-bold" th:text="${agendamentos != null ? agendamentos.size() : 0}">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card" style="background:linear-gradient(135deg,#059669,#10b981)">
+                <p class="mb-1 opacity-75 small fw-semibold">CONFIRMADOS</p>
+                <h2 class="mb-0 fw-bold" id="kpiConfirmados">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)">
+                <p class="mb-1 opacity-75 small fw-semibold">PENDENTES</p>
+                <h2 class="mb-0 fw-bold" id="kpiPendentes">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">
+                <p class="mb-1 opacity-75 small fw-semibold">PRÓXIMOS 7 DIAS</p>
+                <h2 class="mb-0 fw-bold" id="kpiProximos">0</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendário -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center py-3">
-            <span><i class="bi bi-calendar-check text-primary me-2"></i>Todos os Agendamentos</span>
+            <span><i class="bi bi-calendar3 text-primary me-2"></i>Calendário de Agendamentos</span>
+            <div class="d-flex gap-2">
+                <span class="badge bg-warning text-dark">Pendente</span>
+                <span class="badge bg-success">Confirmado</span>
+                <span class="badge bg-info text-dark">Realizado</span>
+                <span class="badge bg-secondary">Cancelado</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="calendar" style="min-height:560px"></div>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-3">
+            <span><i class="bi bi-list-ul text-primary me-2"></i>Agenda Detalhada</span>
             <span class="badge bg-secondary" th:text="${agendamentos != null ? agendamentos.size() : 0} + ' registros'"></span>
         </div>
         <div class="card-body p-0">
@@ -35,38 +79,23 @@
             <div class="table-responsive" th:if="${agendamentos != null and !#lists.isEmpty(agendamentos)}">
                 <table class="table table-hover align-middle mb-0">
                     <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Lead / Paciente</th>
-                            <th>Operador</th>
-                            <th>Procedimento</th>
-                            <th>Data / Hora</th>
-                            <th>Status</th>
-                            <th>Lembrete IA</th>
-                            <th>Criado em</th>
-                        </tr>
+                        <tr><th>#</th><th>Lead</th><th>Operador</th><th>Procedimento</th><th>Data / Hora</th><th>Status</th><th>Lembrete IA</th></tr>
                     </thead>
                     <tbody>
                         <tr th:each="ag : ${agendamentos}">
                             <td class="small text-muted" th:text="${ag.id}"></td>
-                            <td>
-                                <div class="fw-semibold small" th:text="${ag.lead != null ? ag.lead.nome : '—'}"></div>
-                                <div class="text-muted" style="font-size:0.73rem" th:text="${ag.lead != null ? ag.lead.email : ''}"></div>
-                            </td>
+                            <td><div class="fw-semibold small" th:text="${ag.lead != null ? ag.lead.nome : '—'}"></div>
+                                <div class="text-muted" style="font-size:0.73rem" th:text="${ag.lead != null ? ag.lead.email : ''}"></div></td>
                             <td class="small" th:text="${ag.operador != null ? ag.operador.nome : '—'}"></td>
                             <td class="small" th:text="${ag.procedimento ?: '—'}"></td>
                             <td class="small fw-semibold" th:text="${ag.dataHora}"></td>
-                            <td>
-                                <span class="badge"
+                            <td><span class="badge"
                                     th:text="${ag.status}"
-                                    th:classappend="${ag.status == 'Confirmado'} ? 'bg-success' : (${ag.status == 'Cancelado'} ? 'bg-secondary' : (${ag.status == 'Realizado'} ? 'bg-info text-dark' : 'bg-warning text-dark'))">
-                                </span>
-                            </td>
+                                    th:classappend="${ag.status == 'Confirmado'} ? 'bg-success' : (${ag.status == 'Cancelado'} ? 'bg-secondary' : (${ag.status == 'Realizado'} ? 'bg-info text-dark' : 'bg-warning text-dark'))"></span></td>
                             <td class="text-center">
                                 <i th:if="${ag.lembreteEnviado}" class="bi bi-check-circle-fill text-success"></i>
                                 <i th:if="${!ag.lembreteEnviado}" class="bi bi-clock text-muted"></i>
                             </td>
-                            <td class="small text-muted" th:text="${ag.criadoEm}"></td>
                         </tr>
                     </tbody>
                 </table>
@@ -74,71 +103,89 @@
         </div>
     </div>
 
-    <!-- Documentação da API -->
+    <!-- Documentação API -->
     <div class="card">
-        <div class="card-header py-3">
-            <i class="bi bi-code-slash text-primary me-2"></i>
-            Endpoints disponíveis — <code>/api/agendamentos</code>
-        </div>
+        <div class="card-header py-3"><i class="bi bi-code-slash text-primary me-2"></i>Endpoints REST — <code>/api/agendamentos</code></div>
         <div class="card-body">
             <div class="row g-3">
                 <div class="col-md-6">
-                    <div class="api-doc mb-2">
-                        <span class="api-method method-post">POST</span>
+                    <div class="api-doc mb-2"><span class="api-method method-post">POST</span>
                         <code> /api/agendamentos</code>
-                        <div><code class="text-muted" style="font-size:0.75rem">Criar agendamento → 201 Created | 409 Conflito | 422 Data passada</code></div>
+                        <div><code class="text-muted">201 Created | 409 Conflito | 422 Data passada</code></div>
                     </div>
-                    <div class="api-doc mb-2">
-                        <span class="api-method method-get">GET</span>
+                    <div class="api-doc mb-2"><span class="api-method method-get">GET</span>
                         <code> /api/agendamentos</code>
-                        <div><code class="text-muted" style="font-size:0.75rem">Listar todos → 200 OK</code></div>
+                        <div><code class="text-muted">→ lista usada pelo calendário (200 OK)</code></div>
                     </div>
-                    <div class="api-doc mb-2">
-                        <span class="api-method method-get">GET</span>
+                    <div class="api-doc mb-2"><span class="api-method method-get">GET</span>
                         <code> /api/agendamentos/{id}</code>
-                        <div><code class="text-muted" style="font-size:0.75rem">Buscar por ID → 200 OK | 404 Not Found</code></div>
-                    </div>
-                    <div class="api-doc mb-2">
-                        <span class="api-method method-get">GET</span>
-                        <code> /api/agendamentos/lead/{leadId}</code>
-                        <div><code class="text-muted" style="font-size:0.75rem">Agendamentos de um lead → 200 OK</code></div>
+                        <div><code class="text-muted">200 OK | 404 Not Found</code></div>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="api-doc mb-2">
-                        <span class="api-method method-get">GET</span>
-                        <code> /api/agendamentos/status/{status}</code>
-                        <div><code class="text-muted" style="font-size:0.75rem">Filtrar por status → 200 OK</code></div>
-                    </div>
-                    <div class="api-doc mb-2">
-                        <span class="api-method method-patch">PATCH</span>
+                    <div class="api-doc mb-2"><span class="api-method method-patch">PATCH</span>
                         <code> /api/agendamentos/{id}/confirmar</code>
-                        <div><code class="text-muted" style="font-size:0.75rem">Confirmar agendamento → 200 OK</code></div>
+                        <div><code class="text-muted">→ dispara lembrete IA (200 OK)</code></div>
                     </div>
-                    <div class="api-doc mb-2">
-                        <span class="api-method method-patch">PATCH</span>
+                    <div class="api-doc mb-2"><span class="api-method method-patch">PATCH</span>
                         <code> /api/agendamentos/{id}/reagendar</code>
-                        <div><code class="text-muted" style="font-size:0.75rem">Body: {"dataHora":"2025-06-01T10:00"} → 200 OK</code></div>
+                        <div><code class="text-muted">Body: {"dataHora":"..."} (200 / 409)</code></div>
                     </div>
-                    <div class="api-doc mb-2">
-                        <span class="api-method method-patch">PATCH</span>
+                    <div class="api-doc mb-2"><span class="api-method method-patch">PATCH</span>
                         <code> /api/agendamentos/{id}/cancelar</code>
-                        <div><code class="text-muted" style="font-size:0.75rem">Cancelar → 204 No Content</code></div>
+                        <div><code class="text-muted">204 No Content</code></div>
                     </div>
                 </div>
             </div>
-            <div class="mt-3 p-3 bg-light rounded">
-                <p class="mb-1 fw-semibold small">Regras de Negócio:</p>
-                <ul class="small mb-0 text-muted">
-                    <li>Não é possível agendar para datas no passado → <code>422</code></li>
-                    <li>Conflito de horário detectado automaticamente → <code>409</code></li>
-                    <li>Após confirmar, IA gera lembrete automático para o lead</li>
-                </ul>
-            </div>
         </div>
     </div>
+
 </div>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css"/>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script th:inline="javascript">
+/*<![CDATA[*/
+const ags = /*[[${agendamentos}]]*/ [];
+
+const colorFor = s => ({Confirmado:'#10b981', Cancelado:'#94a3b8', Realizado:'#06b6d4'}[s] || '#f59e0b');
+
+// KPIs derivadas
+const hoje = new Date(); hoje.setHours(0,0,0,0);
+const seteDias = new Date(hoje); seteDias.setDate(hoje.getDate()+7);
+let conf=0, pend=0, prox=0;
+const events = (ags||[]).map(a => {
+    if (a.status === 'Confirmado') conf++; else if (a.status !== 'Cancelado' && a.status !== 'Realizado') pend++;
+    const d = a.dataHora ? new Date(a.dataHora) : null;
+    if (d && d >= hoje && d < seteDias) prox++;
+    return {
+        title: (a.lead && a.lead.nome ? a.lead.nome : 'Lead') + ' · ' + (a.procedimento || '—'),
+        start: a.dataHora,
+        backgroundColor: colorFor(a.status),
+        borderColor: colorFor(a.status),
+        extendedProps: { status: a.status, operador: a.operador && a.operador.nome }
+    };
+});
+document.getElementById('kpiConfirmados').textContent = conf;
+document.getElementById('kpiPendentes').textContent = pend;
+document.getElementById('kpiProximos').textContent = prox;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const cal = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView: 'dayGridMonth',
+        locale: 'pt-br',
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+        buttonText: { today:'hoje', month:'mês', week:'semana', list:'lista' },
+        height: 580,
+        events,
+        eventDidMount: info => {
+            info.el.title = info.event.title + ' — ' + (info.event.extendedProps.status || '');
+        }
+    });
+    cal.render();
+});
+/*]]>*/
+</script>
 </body>
 </html>

@@ -447,13 +447,15 @@ async function bootstrap() {
         const token = auth.token;
 
         setStatus('Carregando leads e agendamentos…');
-        const [dash, leadsPg, urgentes, ags] = await Promise.all([
+        const [dash, leadsPg, urgentesResp, agsResp] = await Promise.all([
             api('/api/leads/dashboard', {}, token),
             api('/api/leads?page=0&size=1000', {}, token),
             api('/api/leads/urgentes', {}, token),
-            api('/api/agendamentos', {}, token),
+            api('/api/agendamentos?page=0&size=1000', {}, token),
         ]);
-        const leads = leadsPg.content || [];
+        const leads     = Array.isArray(leadsPg)     ? leadsPg     : (leadsPg.content     || []);
+        const urgentes  = Array.isArray(urgentesResp)? urgentesResp: (urgentesResp.content|| []);
+        const ags       = Array.isArray(agsResp)     ? agsResp     : (agsResp.content     || []);
 
         document.getElementById('kTotal').textContent = dash.totalLeads;
         document.getElementById('kTotalSub').textContent = leads.length + ' carregados';

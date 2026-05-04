@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="pt-BR">
+<head th:replace="~{fragments/layout :: head('Inteligência Artificial')}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar(${paginaAtiva})}"></div>
+
+<div class="topbar">
+    <div>
+        <h4 class="mb-0 fw-bold"><i class="bi bi-robot text-primary me-2"></i>Painel de IA</h4>
+        <small class="text-muted">Análise de leads, detecção de urgência e relatórios automáticos</small>
+    </div>
+</div>
+
+<div class="main-content">
+
+    <div th:if="${erro}" class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${erro}"></span>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-header py-3"><i class="bi bi-graph-up text-primary me-2"></i>Leads Urgentes Detectados</div>
+                <div class="card-body">
+                    <h2 class="fw-bold mb-0" th:text="${leadsUrgentes != null} ? ${#lists.size(leadsUrgentes)} : 0">0</h2>
+                    <small class="text-muted">classificados pela IA</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8" th:if="${ultimoRelatorio != null}">
+            <div class="card h-100">
+                <div class="card-header py-3"><i class="bi bi-file-earmark-text text-primary me-2"></i>
+                    Último Relatório IA
+                    <span class="badge bg-light text-dark ms-2" th:text="${ultimoRelatorio.dataReferencia}"></span>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2" th:text="${ultimoRelatorio.resumoIa}">Resumo executivo gerado pela IA.</p>
+                    <p class="small text-muted mb-0" th:text="${ultimoRelatorio.recomendacoesIa}">Recomendações estratégicas.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8" th:if="${ultimoRelatorio == null}">
+            <div class="card h-100">
+                <div class="card-header py-3">Último Relatório IA</div>
+                <div class="card-body text-muted small">
+                    Ainda não há relatórios gerados. O job diário roda às 7h e produz um relatório executivo automaticamente.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentação dos Endpoints de IA -->
+    <div class="card">
+        <div class="card-header d-flex align-items-center gap-2 py-3">
+            <i class="bi bi-code-slash text-primary"></i>
+            Documentação dos Endpoints — Inteligência Artificial
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <p class="fw-semibold small text-uppercase text-muted mb-2">Análise de Lead</p>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-post">POST</span>
+                        <code> /api/ai/leads/{id}/analisar</code>
+                        <div><code class="text-muted">→ retorna recomendação estratégica + score de conversão (200 OK / 404)</code></div>
+                    </div>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-post">POST</span>
+                        <code> /api/ai/urgencia</code>
+                        <div><code class="text-muted">→ classifica texto como CRITICO / ALTO / NORMAL (200 OK)</code></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <p class="fw-semibold small text-uppercase text-muted mb-2">Modelo Preditivo (Data Science)</p>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-get">GET</span>
+                        <code> /api/leads/urgentes</code>
+                        <div><code class="text-muted">→ leads classificados como urgentes pelo scoring</code></div>
+                    </div>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-get">GET</span>
+                        <code> /api/leads/dashboard</code>
+                        <div><code class="text-muted">→ KPIs consumidos pelo modelo ML offline</code></div>
+                    </div>
+                    <div class="api-doc mb-2">
+                        <span class="api-method method-patch">PATCH</span>
+                        <code> /api/leads/{id}/status</code>
+                        <div><code class="text-muted">→ atualizar status (alimenta retreino do modelo)</code></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-3 small mb-0">
+                <i class="bi bi-info-circle me-1"></i>
+                A documentação completa OpenAPI/Swagger está disponível em
+                <a href="/swagger-ui.html" class="alert-link" target="_blank">/swagger-ui.html</a>.
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${leadsUrgentes != null and !#lists.isEmpty(leadsUrgentes)}" class="card mt-4">
+        <div class="card-header py-3"><i class="bi bi-exclamation-octagon text-danger me-2"></i>Top Leads Urgentes (Modelo IA)</div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>Nome</th><th>Score</th><th>Procedimento</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                        <tr th:each="lead : ${leadsUrgentes}">
+                            <td class="fw-semibold small" th:text="${lead.nome}"></td>
+                            <td><span class="badge bg-danger" th:text="${lead.leadScore}"></span></td>
+                            <td class="small" th:text="${lead.procedimentoInteresse ?: '-'}"></td>
+                            <td><span class="badge bg-info text-dark small" th:text="${lead.status}"></span></td>
+                            <td><a th:href="@{/leads/{id}(id=${lead.id})}" class="btn btn-sm btn-outline-primary py-0"><i class="bi bi-arrow-right"></i></a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

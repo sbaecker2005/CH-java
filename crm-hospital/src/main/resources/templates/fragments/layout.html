@@ -108,6 +108,11 @@
                     <i class="bi bi-people"></i> Usuários
                 </a>
             </li>
+            <li class="nav-item">
+                <a th:href="@{/ia}" class="nav-link" th:classappend="${paginaAtiva == 'ia'} ? 'active'">
+                    <i class="bi bi-robot"></i> Inteligência Artificial
+                </a>
+            </li>
         </ul>
         <div class="sidebar-footer">
             <a href="/swagger-ui.html" target="_blank" class="nav-link">
